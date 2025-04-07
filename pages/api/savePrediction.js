@@ -1,5 +1,5 @@
 // pages/api/savePrediction.js
-import supabase from '@/lib/supabase-admin'; // ✅ use @ alias if configured, otherwise use relative
+import supabase from '../../lib/supabase-admin';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
