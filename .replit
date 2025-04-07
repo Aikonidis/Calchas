@@ -1,0 +1,12 @@
+modules = ["nodejs-20"]
+run = "npm install framer-motion"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "npm install framer-motion"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80
