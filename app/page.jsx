@@ -1,5 +1,4 @@
 import "../styles/globals.css";
-
 "use client";
 
 import { useState } from "react";
