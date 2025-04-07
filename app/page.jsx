@@ -34,7 +34,20 @@ export default function Home() {
     const normalized = random.map((r) => Math.round((r / total) * 100));
     setPredictions(normalized);
   };
-
+  // 👇 Add this part to send to the API route
+  await fetch('/api/savePrediction', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      question,
+      answers,
+      predictions: normalized,
+    }),
+  });
+};
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white p-6 font-sans">
       <motion.div
