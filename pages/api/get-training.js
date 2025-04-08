@@ -1,5 +1,5 @@
 // pages/api/get-training.js
-import supabase from "../../lib/supabase-admin";
+import supabase from '../../lib/supabase-admin';
 
 export default async function handler(req, res) {
   const { data, error } = await supabase.from("training_data").select("*");
