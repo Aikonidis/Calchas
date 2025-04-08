@@ -58,4 +58,4 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
 className="max-w-2xl mx-auto"
->
+> 
