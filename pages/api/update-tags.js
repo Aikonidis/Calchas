@@ -1,5 +1,5 @@
 // pages/api/update-tags.js
-import supabase from '@/lib/supabase-admin';
+import supabase from '../../lib/supabase-admin';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
