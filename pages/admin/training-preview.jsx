@@ -5,17 +5,17 @@ import { useState } from "react";
 const mockData = [
   {
     source: "Etsy",
-    text: '“Love this hoodie, super soft and perfect for streaming!”',
+    text: "Love this hoodie, super soft and perfect for streaming!",
     aiTags: ["streamwear", "esports", "comfy"],
   },
   {
     source: "Instagram",
-    text: '"Drip check 🔥 #cyberpunk #gamingstyle"',
+    text: "Drip check 🔥 #cyberpunk #gamingstyle",
     aiTags: ["edgy streetwear", "cyberpunk"],
   },
   {
     source: "Amazon",
-    text: '“The print is high quality. Would wear to a LAN party!”',
+    text: "The print is high quality. Would wear to a LAN party!",
     aiTags: ["gamer-core"],
   },
 ];
@@ -43,16 +43,59 @@ export default function TrainingPreview() {
     setData(updated);
   };
 
+  const downloadCSV = () => {
+    const header = "source,text,tags\n";
+    const rows = data
+      .map(item =>
+        `${item.source},"${item.text}","${item.aiTags.join(" | ")}"`
+      )
+      .join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "training_data.csv";
+    a.click();
+  };
+
+  const startTraining = async () => {
+    try {
+      const response = await fetch("/api/train-model", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        alert("✅ Calchas training started!");
+      } else {
+        alert("⚠️ Something went wrong: " + result.error);
+      }
+    } catch (err) {
+      alert("🚨 Error starting training");
+      console.error(err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white p-8 font-sans">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold tracking-tight">🧠 Calchas Training Preview</h1>
           <div className="space-x-3">
-            <button className="bg-purple-700 hover:bg-purple-600 px-4 py-2 rounded text-white text-sm font-semibold">
+            <button
+              onClick={downloadCSV}
+              className="bg-purple-700 hover:bg-purple-600 px-4 py-2 rounded text-white text-sm font-semibold"
+            >
               📄 Download CSV
             </button>
-            <button className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded text-white text-sm font-semibold">
+            <button
+              onClick={startTraining}
+              className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded text-white text-sm font-semibold"
+            >
               🚀 Start Training
             </button>
           </div>
@@ -63,7 +106,7 @@ export default function TrainingPreview() {
             <p className="text-sm text-gray-400 mb-2">Source: {entry.source}</p>
             <p className="italic text-lg mb-4">“{entry.text}”</p>
 
-            <p className="text-sm font-medium text-purple-300 mb-1">AI Suggests:</p>
+            <p className="text-sm font-medium text-purple-300 mb-1">AI Tags:</p>
             <div className="flex flex-wrap gap-2 mb-4">
               {entry.aiTags.map((tag, j) => (
                 <span
@@ -110,6 +153,3 @@ export default function TrainingPreview() {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
