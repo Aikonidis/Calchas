@@ -1,105 +1,60 @@
-// pages/api/predict.js
-import formidable from "formidable";
-import fs from "fs";
-import { createClient } from "@supabase/supabase-js";
-import OpenAI from "openai";
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { OpenAI } from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Only POST allowed' });
+  }
 
-  const form = new formidable.IncomingForm();
-  form.uploadDir = "/tmp";
-  form.keepExtensions = true;
+  const { imageUrl, question, answers } = req.body;
 
-  form.parse(req, async (err, fields, files) => {
-    if (err) return res.status(500).json({ error: "Upload failed" });
+  const prompt = `
+You are a fashion market analyst AI. A user is testing a new apparel design.
 
-    const { question, answers } = fields;
-    const image = files.image;
+Target Market: 18–25 y/o, Europe  
+Price Point: €40
 
-    // Upload image to Supabase
-    const fileData = fs.readFileSync(image.filepath);
-    const fileExt = image.originalFilename.split(".").pop();
-    const fileName = `poll-images/${Date.now()}.${fileExt}`;
+🖼️ Product Image: ${imageUrl}  
+❓ Poll Question: "${question}"  
+✅ Options: ${JSON.stringify(answers)}
 
-    const { data: uploaded, error: uploadErr } = await supabase.storage
-      .from("poll-assets")
-      .upload(fileName, fileData, {
-        contentType: image.mimetype,
-        upsert: true,
-      });
+💡 Real-world trends:
+- Etsy: Top streamer gear blends comfy and edgy
+- TikTok: High-contrast gaming fits get traction
+- LTTStore: Futuristic designs with a techwear vibe are popular
+- Amazon: Most 5-star rated hoodies are priced €35–€45, with strong materials and unique patterns
 
-    if (uploadErr) {
-      console.error("Upload error:", uploadErr);
-      return res.status(500).json({ error: "Image upload failed" });
-    }
+🗳️ Simulate how 2,000 people in this demographic would respond to this poll.
 
-    const { data: urlData } = supabase.storage.from("poll-assets").getPublicUrl(fileName);
-    const imageUrl = urlData.publicUrl;
+📊 Also estimate an accuracy level from 0–100%, based on available trend data and user fit.
 
-    // GPT-4 Vision: Describe the image
-    const visionRes = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Describe this product image in detail for fashion/marketing analysis." },
-            { type: "image_url", image_url: { url: imageUrl } },
-          ],
-        },
-      ],
-      max_tokens: 100,
-    });
+Return this JSON:
 
-    const imageDesc = visionRes.choices[0]?.message?.content || "a fashion item";
-
-    // Final prompt for prediction
-    const fullPrompt = `
-You are an AI simulating the results of a marketing poll.
-
-A fashion brand uploaded an image of a product described as: "${imageDesc}"
-They asked the following question to 2,000 Europeans aged 18-25:
-
-"${question}"
-
-Answer choices were:
-${answers.split(",").map((a) => `- ${a}`).join("\n")}
-
-Simulate realistic responses and return the result as JSON with percentage values. Percentages should be integers and total 100.
-Example: { "Yes": 60, "No": 30, "Maybe": 10 }
+{
+  "predictions": {
+    "Option1": %,
+    ...
+  },
+  "accuracy": number
+}
 `;
 
-    const pollRes = await openai.chat.completions.create({
+  try {
+    const completion = await openai.chat.completions.create({
       model: "gpt-4",
-      messages: [{ role: "user", content: fullPrompt }],
+      messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });
 
-    const reply = pollRes.choices[0].message.content;
+    const aiResponse = completion.choices[0].message.content;
 
-    // Try parsing JSON from response
-    try {
-      const json = JSON.parse(reply);
-      return res.status(200).json({ success: true, prediction: json, imageUrl });
-    } catch (err) {
-      console.error("JSON parse error:", err);
-      return res.status(500).json({ error: "AI returned invalid response", raw: reply });
-    }
-  });
+    const parsed = JSON.parse(aiResponse);
+    return res.status(200).json(parsed);
+  } catch (err) {
+    console.error("AI Prediction error:", err);
+    return res.status(500).json({ error: "Prediction failed" });
+  }
 }
