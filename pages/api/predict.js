@@ -1,60 +1,51 @@
-import { OpenAI } from 'openai';
+// pages/api/predict.js
+import { OpenAI } from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Only POST allowed" });
   }
 
   const { imageUrl, question, answers } = req.body;
 
-  const prompt = `
-You are a fashion market analyst AI. A user is testing a new apparel design.
+  if (!question || !answers || answers.length < 2) {
+    return res.status(400).json({ error: "Missing question or answers" });
+  }
 
-Target Market: 18–25 y/o, Europe  
-Price Point: €40
+  try {
+    const prompt = `
+You're simulating a poll with 2,000 European participants aged 18–25.
+Use the following image as the subject: ${imageUrl}.
+The user asks: "${question}"
+Answer options: ${answers.map((a, i) => `${i + 1}. ${a}`).join("\n")}
 
-🖼️ Product Image: ${imageUrl}  
-❓ Poll Question: "${question}"  
-✅ Options: ${JSON.stringify(answers)}
+Estimate how people would respond and give the percentage per answer option (must total ~100%).
+Also give an estimated accuracy percentage from 70 to 95 based on relevance and clarity.
 
-💡 Real-world trends:
-- Etsy: Top streamer gear blends comfy and edgy
-- TikTok: High-contrast gaming fits get traction
-- LTTStore: Futuristic designs with a techwear vibe are popular
-- Amazon: Most 5-star rated hoodies are priced €35–€45, with strong materials and unique patterns
-
-🗳️ Simulate how 2,000 people in this demographic would respond to this poll.
-
-📊 Also estimate an accuracy level from 0–100%, based on available trend data and user fit.
-
-Return this JSON:
-
+Respond in JSON like:
 {
-  "predictions": {
-    "Option1": %,
-    ...
-  },
-  "accuracy": number
+  "predictions": { "Answer 1": 40, "Answer 2": 30, ... },
+  "accuracy": 87
 }
 `;
 
-  try {
-    const completion = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });
 
-    const aiResponse = completion.choices[0].message.content;
+    const raw = response.choices[0]?.message?.content;
+    const jsonStart = raw.indexOf("{");
+    const json = JSON.parse(raw.slice(jsonStart));
 
-    const parsed = JSON.parse(aiResponse);
-    return res.status(200).json(parsed);
+    return res.status(200).json(json);
   } catch (err) {
-    console.error("AI Prediction error:", err);
-    return res.status(500).json({ error: "Prediction failed" });
+    console.error("Prediction API Error:", err);
+    return res.status(500).json({ error: "Failed to generate predictions" });
   }
 }
