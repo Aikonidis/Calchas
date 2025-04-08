@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { fetchTrainingData, saveTrainingTag } from '@/lib/dataFunctions';
+import { getTrainingData, updateTags } from '../../lib/dataFunctions';
 
 export default function TrainingPreview() {
   const [entries, setEntries] = useState([]);
