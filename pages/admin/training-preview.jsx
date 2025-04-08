@@ -1,4 +1,5 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { getTrainingData, updateTags } from '../../lib/dataFunctions';
 
@@ -6,7 +7,7 @@ export default function TrainingPreview() {
   const [entries, setEntries] = useState([]);
 
   useEffect(() => {
-    fetchTrainingData()
+    getTrainingData()
       .then(setEntries)
       .catch(console.error);
   }, []);
@@ -18,7 +19,7 @@ export default function TrainingPreview() {
         : entry
     );
     setEntries(updated);
-    await saveTrainingTag(entryId, updated.find((e) => e.id === entryId).tags);
+    await updateTags(entryId, updated.find((e) => e.id === entryId).tags);
   };
 
   const handleRemoveTag = async (entryId, tagToRemove) => {
@@ -28,7 +29,7 @@ export default function TrainingPreview() {
         : entry
     );
     setEntries(updated);
-    await saveTrainingTag(entryId, updated.find((e) => e.id === entryId).tags);
+    await updateTags(entryId, updated.find((e) => e.id === entryId).tags);
   };
 
   return (
@@ -65,7 +66,7 @@ export default function TrainingPreview() {
               placeholder="Add tag..."
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  handleAddTag(entry.id, e.target.value);
+                  handleAddTag(entry.id, e.target.value.trim());
                   e.target.value = '';
                 }
               }}
