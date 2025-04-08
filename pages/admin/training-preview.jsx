@@ -153,3 +153,6 @@ export default function TrainingPreview() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
