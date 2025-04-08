@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+const [data, setData] = useState([]);
 
 const mockData = [
   {
