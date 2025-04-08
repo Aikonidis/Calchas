@@ -131,3 +131,44 @@ export default function TrainingPreview() {
                   <span className="text-xs text-red-500">No tags available</span>
                 )}
               </div>
+
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  id={`input-${i}`}
+                  placeholder="Add tag..."
+                  className="bg-gray-700 text-sm px-3 py-2 rounded w-full focus:outline-none"
+                />
+                <button
+                  onClick={() => {
+                    const val = document.getElementById(`input-${i}`).value;
+                    handleAddTag(i, val);
+                    document.getElementById(`input-${i}`).value = "";
+                  }}
+                  className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-sm font-medium text-white"
+                >
+                  + Add Tag
+                </button>
+              </div>
+
+              <div className="text-sm text-gray-400 mb-1">Suggestions:</div>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((tag, j) => (
+                  <button
+                    key={j}
+                    onClick={() => handleAddTag(i, tag)}
+                    className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-white"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-400 text-center mt-10">No training data found.</p>
+        )}
+      </div>
+    </div>
+  );
+}
