@@ -26,7 +26,14 @@ const suggestions = [
 ];
 
 export default function TrainingPreview() {
-  const [data, setData] = useState(mockData);
+ useEffect(() => {
+  async function fetchData() {
+    const res = await fetch('/api/get-training');
+    const json = await res.json();
+    setData(json.data || []);
+  }
+  fetchData();
+}, []);
 
   const handleAddTag = (i, newTag) => {
     if (!newTag.trim()) return;
