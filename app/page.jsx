@@ -7,14 +7,20 @@ import { Upload } from "lucide-react";
 
 export default function Home() {
   const [image, setImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
   const [question, setQuestion] = useState("");
   const [answers, setAnswers] = useState([""]);
   const [predictions, setPredictions] = useState(null);
+  const [accuracy, setAccuracy] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImage(URL.createObjectURL(file));
+      const url = URL.createObjectURL(file);
+      setImage(url);
+      // Simulate uploaded URL (if needed, replace with actual upload)
+      setImageUrl("https://via.placeholder.com/300?text=Uploaded+Design");
     }
   };
 
@@ -29,26 +35,30 @@ export default function Home() {
   };
 
   const submit = async () => {
-    const random = answers.map(() => Math.floor(Math.random() * 100));
-    const total = random.reduce((a, b) => a + b, 0);
-    const normalized = random.map((r) => Math.round((r / total) * 100));
-    setPredictions(normalized);
-
+    setLoading(true);
     try {
-      await fetch("/api/savePrediction", {
+      const res = await fetch("/api/predict", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          imageUrl,
           question,
           answers,
-          predictions: normalized,
         }),
       });
+
+      const result = await res.json();
+      if (result.predictions) {
+        const ordered = answers.map((ans) => result.predictions[ans] || 0);
+        setPredictions(ordered);
+        setAccuracy(result.accuracy);
+      }
     } catch (err) {
-      console.error("Failed to save prediction:", err);
+      console.error("Prediction failed", err);
     }
+    setLoading(false);
   };
 
   return (
@@ -115,9 +125,12 @@ export default function Home() {
 
         <button
           onClick={submit}
-          className="w-full bg-purple-700 hover:bg-purple-600 text-white py-3 rounded text-lg font-semibold mb-6 transition-all"
+          disabled={loading}
+          className={`w-full ${
+            loading ? "bg-gray-600" : "bg-purple-700 hover:bg-purple-600"
+          } text-white py-3 rounded text-lg font-semibold mb-6 transition-all`}
         >
-          Predict Responses
+          {loading ? "Simulating..." : "Predict Responses"}
         </button>
 
         {predictions && (
@@ -127,7 +140,8 @@ export default function Home() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <h2 className="text-xl font-bold mb-4 text-purple-300">Predicted Poll Results</h2>
+            <h2 className="text-xl font-bold mb-2 text-purple-300">Predicted Poll Results</h2>
+            <p className="text-sm text-gray-400 mb-4">Estimated AI accuracy: {accuracy}%</p>
             <ul className="space-y-3">
               {answers.map((ans, i) => (
                 <li key={i} className="bg-gray-800 p-3 rounded shadow">
