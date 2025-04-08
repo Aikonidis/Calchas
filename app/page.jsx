@@ -135,3 +135,21 @@ export default function Home() {
                     <span>{ans}</span>
                     <span>{predictions[i]}%</span>
                   </div>
+                  <div className="w-full bg-gray-700 h-2 rounded">
+                    <motion.div
+                      className="h-2 rounded bg-purple-500"
+                      style={{ width: `${predictions[i]}%` }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${predictions[i]}%` }}
+                      transition={{ duration: 0.6 }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        )}
+      </motion.div>
+    </div>
+  );
+}
