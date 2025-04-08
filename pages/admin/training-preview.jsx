@@ -8,19 +8,33 @@ const suggestions = [
 
 export default function TrainingPreview() {
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
-      const res = await fetch('/api/get-training');
-      const json = await res.json();
-      setData(json.data || []);
+      try {
+        const res = await fetch("/api/get-training");
+        const json = await res.json();
+
+        if (!res.ok) throw new Error(json.error || "Failed to load");
+
+        setData(json.data || []);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError("Failed to load training data.");
+      } finally {
+        setLoading(false);
+      }
     }
+
     fetchData();
   }, []);
 
   const handleAddTag = (i, newTag) => {
     if (!newTag.trim()) return;
     const updated = [...data];
+    if (!Array.isArray(updated[i].aiTags)) updated[i].aiTags = [];
     if (!updated[i].aiTags.includes(newTag)) {
       updated[i].aiTags.push(newTag);
       setData(updated);
@@ -37,7 +51,7 @@ export default function TrainingPreview() {
     const header = "source,text,tags\n";
     const rows = data
       .map(item =>
-        `${item.source},"${item.text}","${item.aiTags.join(" | ")}"`
+        `${item.source},"${item.text}","${(item.aiTags || []).join(" | ")}"`
       )
       .join("\n");
     const blob = new Blob([header + rows], { type: "text/csv" });
@@ -91,7 +105,11 @@ export default function TrainingPreview() {
           </div>
         </div>
 
-        {data && data.length > 0 ? (
+        {loading ? (
+          <p className="text-gray-400 text-center mt-10">Loading training data...</p>
+        ) : error ? (
+          <p className="text-red-500 text-center mt-10">{error}</p>
+        ) : data.length > 0 ? (
           data.map((entry, i) => (
             <div key={i} className="bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
               <p className="text-sm text-gray-400 mb-2">Source: {entry.source}</p>
@@ -99,54 +117,17 @@ export default function TrainingPreview() {
 
               <p className="text-sm font-medium text-purple-300 mb-1">AI Tags:</p>
               <div className="flex flex-wrap gap-2 mb-4">
-                {entry.aiTags.map((tag, j) => (
-                  <span
-                    key={j}
-                    onClick={() => handleRemoveTag(i, tag)}
-                    className="bg-purple-700 text-white text-xs px-3 py-1 rounded-full cursor-pointer hover:bg-purple-600"
-                  >
-                    {tag} ✕
-                  </span>
-                ))}
+                {Array.isArray(entry.aiTags) ? (
+                  entry.aiTags.map((tag, j) => (
+                    <span
+                      key={j}
+                      onClick={() => handleRemoveTag(i, tag)}
+                      className="bg-purple-700 text-white text-xs px-3 py-1 rounded-full cursor-pointer hover:bg-purple-600"
+                    >
+                      {tag} ✕
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-red-500">No tags available</span>
+                )}
               </div>
-
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  id={`input-${i}`}
-                  placeholder="Add tag..."
-                  className="bg-gray-700 text-sm px-3 py-2 rounded w-full focus:outline-none"
-                />
-                <button
-                  onClick={() => {
-                    const val = document.getElementById(`input-${i}`).value;
-                    handleAddTag(i, val);
-                    document.getElementById(`input-${i}`).value = "";
-                  }}
-                  className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-sm font-medium text-white"
-                >
-                  + Add Tag
-                </button>
-              </div>
-
-              <div className="text-sm text-gray-400 mb-1">Suggestions:</div>
-              <div className="flex flex-wrap gap-2">
-                {suggestions.map((tag, j) => (
-                  <button
-                    key={j}
-                    onClick={() => handleAddTag(i, tag)}
-                    className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-white"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-400 text-center mt-10">Loading training data...</p>
-        )}
-      </div>
-    </div>
-  );
-}
