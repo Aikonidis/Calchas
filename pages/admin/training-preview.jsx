@@ -7,7 +7,13 @@ export default function TrainingPreview() {
 
   useEffect(() => {
     getTrainingData()
-      .then(setEntries)
+      .then(data => {
+        const safeEntries = (data || []).map(entry => ({
+          ...entry,
+          tags: entry.ai_tags || [],
+        }));
+        setEntries(safeEntries);
+      })
       .catch(console.error);
   }, []);
 
@@ -63,8 +69,8 @@ export default function TrainingPreview() {
               className="p-1 text-black"
               placeholder="Add tag..."
               onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  handleAddTag(entry.id, e.target.value);
+                if (e.key === 'Enter' && e.target.value.trim()) {
+                  handleAddTag(entry.id, e.target.value.trim());
                   e.target.value = '';
                 }
               }}
