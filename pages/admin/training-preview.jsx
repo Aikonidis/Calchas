@@ -1,115 +1,78 @@
-"use client";
-
-import { useState } from "react";
-
-const mockData = [
-  {
-    source: "Etsy",
-    text: '“Love this hoodie, super soft and perfect for streaming!”',
-    aiTags: ["streamwear", "esports", "comfy"],
-  },
-  {
-    source: "Instagram",
-    text: '"Drip check 🔥 #cyberpunk #gamingstyle"',
-    aiTags: ["edgy streetwear", "cyberpunk"],
-  },
-  {
-    source: "Amazon",
-    text: '“The print is high quality. Would wear to a LAN party!”',
-    aiTags: ["gamer-core"],
-  },
-];
-
-const suggestions = [
-  "esports", "anime", "streetwear", "cosplay", "minimalist",
-  "cyberpunk", "streamwear", "techwear", "positive", "neutral", "negative",
-];
+'use client';
+import { useEffect, useState } from 'react';
+import { fetchTrainingData, saveTrainingTag } from '@/lib/dataFunctions';
 
 export default function TrainingPreview() {
-  const [data, setData] = useState(mockData);
+  const [entries, setEntries] = useState([]);
 
-  const handleAddTag = (i, newTag) => {
-    if (!newTag.trim()) return;
-    const updated = [...data];
-    if (!updated[i].aiTags.includes(newTag)) {
-      updated[i].aiTags.push(newTag);
-      setData(updated);
-    }
+  useEffect(() => {
+    fetchTrainingData()
+      .then(setEntries)
+      .catch(console.error);
+  }, []);
+
+  const handleAddTag = async (entryId, newTag) => {
+    const updated = entries.map((entry) =>
+      entry.id === entryId
+        ? { ...entry, tags: [...entry.tags, newTag] }
+        : entry
+    );
+    setEntries(updated);
+    await saveTrainingTag(entryId, updated.find((e) => e.id === entryId).tags);
   };
 
-  const handleRemoveTag = (i, tagToRemove) => {
-    const updated = [...data];
-    updated[i].aiTags = updated[i].aiTags.filter(tag => tag !== tagToRemove);
-    setData(updated);
+  const handleRemoveTag = async (entryId, tagToRemove) => {
+    const updated = entries.map((entry) =>
+      entry.id === entryId
+        ? { ...entry, tags: entry.tags.filter((tag) => tag !== tagToRemove) }
+        : entry
+    );
+    setEntries(updated);
+    await saveTrainingTag(entryId, updated.find((e) => e.id === entryId).tags);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white p-8 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">🧠 Calchas Training Preview</h1>
-          <div className="space-x-3">
-            <button className="bg-purple-700 hover:bg-purple-600 px-4 py-2 rounded text-white text-sm font-semibold">
-              📄 Download CSV
-            </button>
-            <button className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded text-white text-sm font-semibold">
-              🚀 Start Training
-            </button>
+    <div className="p-6 bg-gray-950 min-h-screen text-white">
+      <h1 className="text-3xl font-bold mb-4 flex items-center gap-2">
+        🧠 Calchas Training Preview
+      </h1>
+
+      {entries.map((entry) => (
+        <div key={entry.id} className="mb-6 border-b border-gray-700 pb-4">
+          <p className="text-sm text-gray-400">Source: {entry.source}</p>
+          <p className="italic text-lg mb-2">"{entry.quote}"</p>
+          <p>
+            <span className="font-semibold">AI Suggests:</span>{' '}
+            {entry.ai_suggestion}
+          </p>
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            {entry.tags.map((tag) => (
+              <button
+                key={tag}
+                className="bg-purple-700 hover:bg-purple-600 px-2 py-1 rounded text-sm"
+                onClick={() => handleRemoveTag(entry.id, tag)}
+              >
+                {tag} ✕
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="text"
+              className="p-1 text-black"
+              placeholder="Add tag..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleAddTag(entry.id, e.target.value);
+                  e.target.value = '';
+                }
+              }}
+            />
           </div>
         </div>
-
-        {data.map((entry, i) => (
-          <div key={i} className="bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-            <p className="text-sm text-gray-400 mb-2">Source: {entry.source}</p>
-            <p className="italic text-lg mb-4">“{entry.text}”</p>
-
-            <p className="text-sm font-medium text-purple-300 mb-1">AI Suggests:</p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {entry.aiTags.map((tag, j) => (
-                <span
-                  key={j}
-                  onClick={() => handleRemoveTag(i, tag)}
-                  className="bg-purple-700 text-white text-xs px-3 py-1 rounded-full cursor-pointer hover:bg-purple-600"
-                >
-                  {tag} ✕
-                </span>
-              ))}
-            </div>
-
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                id={`input-${i}`}
-                placeholder="Add tag..."
-                className="bg-gray-700 text-sm px-3 py-2 rounded w-full focus:outline-none"
-              />
-              <button
-                onClick={() => {
-                  const val = document.getElementById(`input-${i}`).value;
-                  handleAddTag(i, val);
-                  document.getElementById(`input-${i}`).value = "";
-                }}
-                className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-sm font-medium text-white"
-              >
-                + Add Tag
-              </button>
-            </div>
-
-            <div className="text-sm text-gray-400 mb-1">Suggestions:</div>
-            <div className="flex flex-wrap gap-2">
-              {suggestions.map((tag, j) => (
-                <button
-                  key={j}
-                  onClick={() => handleAddTag(i, tag)}
-                  className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-white"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      ))}
     </div>
   );
 }
